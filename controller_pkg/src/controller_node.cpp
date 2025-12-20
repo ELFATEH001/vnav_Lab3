@@ -128,7 +128,12 @@ public:
     //  - make sure you start your timer with reset()
     //
     // ~~~~ begin solution
-
+    desired_state_subscription_ = this->create_subscription<trajectory_msgs::msg::MultiDOFJointTrajectoryPoint>(
+      "desired_state", 10, std::bind(&ControllerNode::onDesiredState , this, _1));
+    current_state_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
+      "current_state", 10, std::bind(&ControllerNode::onCurrentState , this, _1));
+    timer_ = this->create_wall_timer(
+      (hz/1000)ms, std::bind(&ControllerNode::controlLoop, this));
     // ~~~~ end solution
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
     //                                 end part 2
