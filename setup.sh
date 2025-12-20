@@ -4,7 +4,7 @@ pip install -r requirements.txt  # Dependencies
 pip install .
 
 sudo apt install ros-humble-tf-transformations
-pip install numpy==1.26.4
+pip3 install "numpy<1.25"
 pip install -U transforms3d
 pip install rospy2
 sudo apt install ros-humble-ackermann-msgs

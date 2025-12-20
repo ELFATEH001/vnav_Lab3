@@ -55,6 +55,10 @@ class ControllerNode : public rclcpp::Node {
   //   3. a timer for your main control loop
   //
   // ~~~~ begin solution
+  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Subscription<trajectory_msgs::msg::MultiDOFJointTrajectoryPoint>::SharedPtr desired_state_subscription_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr current_state_subscription_;
+  rclcpp::Publisher<mav_msgs::msg::Actuators>::SharedPtr propeller_speeds_publisher_;
 
   // ~~~~ end solution
   // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
