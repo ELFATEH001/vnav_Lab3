@@ -129,11 +129,11 @@ public:
     //
     // ~~~~ begin solution
     desired_state_subscription_ = this->create_subscription<trajectory_msgs::msg::MultiDOFJointTrajectoryPoint>(
-      "desired_state", 10, std::bind(&ControllerNode::onDesiredState , this, _1));
+      "desired_state", 10, std::bind(&ControllerNode::onDesiredState , this, std::placeholders::_1));
     current_state_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
-      "current_state", 10, std::bind(&ControllerNode::onCurrentState , this, _1));
+      "current_state", 10, std::bind(&ControllerNode::onCurrentState , this, std::placeholders::_1));
     timer_ = this->create_wall_timer(
-      (hz/1000)ms, std::bind(&ControllerNode::controlLoop, this));
+      std::chrono::milliseconds(hz/1000), std::bind(&ControllerNode::controlLoop, this));
     // ~~~~ end solution
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
     //                                 end part 2
@@ -170,10 +170,21 @@ public:
     //
     // Hint: use "v << vx, vy, vz;" to fill in a vector with Eigen.
     //
-
+    xd << des_state.transforms[0].translation.x,
+        des_state.transforms[0].translation.y,
+        des_state.transforms[0].translation.z;
+    
+    vd << des_state.velocities[0].linear.x,
+        des_state.velocities[0].linear.y,
+        des_state.velocities[0].linear.z;
+        
+    ad << des_state.accelerations[0].linear.x,
+        des_state.accelerations[0].linear.y,
+        des_state.accelerations[0].linear.z;
+    
     // this is here to surpress an "unused variable compiler warning"
     // you can remove it when you start writing your answer
-    des_state == des_state;
+    // des_state == des_state;
 
     //
     // 3.2 Extract the yaw component from the quaternion in the incoming ROS
