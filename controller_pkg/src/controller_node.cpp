@@ -193,7 +193,9 @@ public:
     //  Hints:
     //    - look into the functions tf2::getYaw(...) and tf2::fromMsg
     //
-
+    tf2::Quaternion quati_des;
+    tf2::fromMsg(des_state.transforms[0].rotation, quati_des);
+    yawd = tf2::getYaw(quati_des);
     //
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
     //                                 end part 3
@@ -211,10 +213,26 @@ public:
     //  CAVEAT: cur_state.twist.twist.angular is in the world frame, while omega
     //          needs to be in the body frame!
     //
+    x << cur_state.pose.pose.position.x,
+        cur_state.pose.pose.position.y,
+        cur_state.pose.pose.position.z;
+    v << cur_state.twist.twist.linear.x,
+        cur_state.twist.twist.linear.y,
+        cur_state.twist.twist.linear.z;
+    
+    Eigen::Quaterniond quati_cur;
+    tf2::fromMsg(cur_state.pose.pose.orientation, quati_cur);
+    R = (quati_cur).toRotationMatrix();
+    Eigen::Vector3d omega_world;
+    omega_world << cur_state.twist.twist.angular.x,
+        cur_state.twist.twist.angular.y,
+        cur_state.twist.twist.angular.z;
+    omega = R.transpose() * omega_world;
 
+    
     // this is here to surpress an "unused variable compiler warning"
     // you can remove it when you start writing your answer
-    cur_state == cur_state;
+    // cur_state == cur_state;
 
     //
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -223,8 +241,9 @@ public:
   }
 
   void controlLoop() {
+    Eigen::Vector3d e3 = Eigen::Vector3d::UnitZ();
     Eigen::Vector3d ex, ev, er, eomega;
-
+    Eigen::Matrix3d Rd;
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     //  PART 5 | Objective: Implement the controller!
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~  ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -232,7 +251,8 @@ public:
     // 5.1 Compute position and velocity errors. Objective: fill in ex, ev.
     //  Hint: [1], eq. (6), (7)
     //
-
+    ex = x - xd;
+    ev = v - vd;
     // 5.2 Compute the Rd matrix.
     //
     //  Hint: break it down in 3 parts:
@@ -249,6 +269,15 @@ public:
     //    - remember to normalize your axes!
     //
     // Build b3d vector
+    Eigen::Vector3d b1d, b2d, b3d;
+
+    b3d = (-kx * ex - kv * ev + m * g * e3 + m * ad) / 
+          ((-kx * ex - kv * ev + m * g * e3 + m * ad).norm());
+    b1d << cos(yawd), sin(yawd), 0;
+    b2d = (b3d.cross(b1d)/(b3d.cross(b1d)).norm());
+    b1d = b2d.cross(b3d);
+
+    Rd << b1d.normalize(), b2d.normalize(), b3d.normalize();
 
     //
     // 5.3 Compute the orientation error (er) and the rotation-rate error
