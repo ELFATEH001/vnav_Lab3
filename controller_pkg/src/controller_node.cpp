@@ -276,8 +276,11 @@ public:
     b1d << cos(yawd), sin(yawd), 0;
     b2d = (b3d.cross(b1d)/(b3d.cross(b1d)).norm());
     b1d = b2d.cross(b3d);
+    b1d.normalize();
+    b2d.normalize();
+    b3d.normalize();
 
-    Rd << b1d.normalize(), b2d.normalize(), b3d.normalize();
+    Rd << b1d, b2d, b3d;
 
     //
     // 5.3 Compute the orientation error (er) and the rotation-rate error
@@ -285,12 +288,13 @@ public:
     //  Hints:
     //     - [1] eq. (10) and (11)
     //     - you can use the Vee() static method implemented above
-    //
+    //  
     //  CAVEAT: feel free to ignore the second addend in eq (11), since it
     //          requires numerical differentiation of Rd and it has negligible
     //          effects on the closed-loop dynamics.
     //
-
+    er = 0.5 * Vee((Rd.transpose() * R - R.transpose() * Rd));
+    eomega = omega ; //- R.transpose() * Rd * Omega_d 
     //
     // 5.4 Compute the desired wrench (force + torques) to control the UAV.
     //  Hints:
