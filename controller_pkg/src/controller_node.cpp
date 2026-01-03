@@ -132,8 +132,10 @@ public:
       "desired_state", 10, std::bind(&ControllerNode::onDesiredState , this, std::placeholders::_1));
     current_state_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
       "current_state", 10, std::bind(&ControllerNode::onCurrentState , this, std::placeholders::_1));
+    propeller_speeds_publisher_ = this->create_publisher<mav_msgs::msg::Actuators>("rotor_speed_cmds", 10);
+
     timer_ = this->create_wall_timer(
-      std::chrono::milliseconds(hz/1000), std::bind(&ControllerNode::controlLoop, this));
+      std::chrono::milliseconds(1000/hz), std::bind(&ControllerNode::controlLoop, this));
     // ~~~~ end solution
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
     //                                 end part 2
@@ -299,7 +301,6 @@ public:
     // 5.4 Compute the desired wrench (force + torques) to control the UAV.
     //  Hints:
     //     - [1] eq. (15), (16)
-
     // CAVEATS:
     //    - Compare the reference frames in the Lab 3 handout with Fig. 1 in the
     //      paper. The z-axes are flipped, which affects the signs of:
@@ -311,6 +312,11 @@ public:
     //      derivative as they are of the second order and have negligible
     //      effects on the closed-loop dynamics.
     //
+    double f;
+    Eigen::Vector3d tau;
+
+    f = ((- kx * ex - kv * ev + m * g * e3 + m * ad).transpose() * R).dot(e3);
+    tau = -kr * er - komega * eomega + omega.cross(J * omega);
 
     // 5.5 Recover the rotor speeds from the wrench computed above
     //
@@ -336,6 +342,29 @@ public:
     //       real life, where propellers are aerodynamically optimized to spin
     //       in one direction!
     //
+    double angle45 = PI / 4.0;
+    Eigen::Vector4d rotor_speeds_squared;
+    Eigen::Vector4d rotor_speeds;
+    // Eigen::Vector3d rho1, rho2, rho3, rho4;
+    // Eigen::Vector4d F2W_col1, F2W_col2, F2W_col3, F2W_col4;
+    Eigen::Vector4d wrench;
+    // what I understand is 
+    // control =  F2W * wrench
+    // rho1 << cos(angle45), sin(angle45), 0;
+    // rho2 << -sin(angle45), cos(angle45), 0;
+    // rho3 << -cos(angle45), -sin(angle45), 0;
+    // rho4 << sin(angle45), -cos(angle45), 0;
+
+    // F2W_col1 << cf,  cd * e3 + cf * d * rho1.cross(e3);
+    // F2W_col2 << cf, -cd * e3 + cf * d * rho2.cross(e3);
+    // F2W_col3 << cf,  cd * e3 + cf * d * rho3.cross(e3);
+    // F2W_col4 << cf, -cd * e3 + cf * d * rho4.cross(e3);
+
+    // F2W << F2W_col1, F2W_col2, F2W_col3, F2W_col4;
+
+    wrench << f, tau(0), tau(1), tau(2);
+    rotor_speeds_squared = F2W.inverse() * wrench;
+    
 
     //
     // 5.6 Populate and publish the control message
@@ -343,7 +372,18 @@ public:
     // Hint: do not forget that the propeller speeds are signed (maybe you want
     // to use signed_sqrt function).
     //
+    rotor_speeds << signed_sqrt(rotor_speeds_squared(0)),
+                        signed_sqrt(rotor_speeds_squared(1)),
+                        signed_sqrt(rotor_speeds_squared(2)),
+                        signed_sqrt(rotor_speeds_squared(3));
+    mav_msgs::msg::Actuators prop_speeds_msg;
+    prop_speeds_msg.angular_velocities.push_back(rotor_speeds(0));
+    prop_speeds_msg.angular_velocities.push_back(rotor_speeds(1));
+    prop_speeds_msg.angular_velocities.push_back(rotor_speeds(2));
+    prop_speeds_msg.angular_velocities.push_back(rotor_speeds(3));
 
+    // publish the message
+    propeller_speeds_publisher_->publish(prop_speeds_msg);
     //
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
     //           end part 5, congrats! Start tuning your gains (part 6)

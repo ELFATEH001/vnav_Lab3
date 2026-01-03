@@ -1,6 +1,6 @@
 controller_node:
   ros__parameters:
-    kx: 1.0
-    kv: 1.0
-    kr: 1.0
-    komega: 1.0
+    kx: 2.9 # 5.18 #0.35 #0.245
+    kv: 1.85 #1.99 #3.58 # 2.2 #3.8 #6.1 #0.478  #0.474 #0.332
+    kr: 7.82 #7.82 #8.5 # 0.45   # 0.40  # 0.51     # 0.385  # orientation of the magenta arrow forward/backward
+    komega: 1.1 #1.52 #2.15 # 0.148 # a sord of the orienation of the magenta arrow, big values make the drone be late
